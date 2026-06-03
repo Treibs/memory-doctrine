@@ -1,0 +1,5 @@
+wiki/
+.kpm/
+knowledge_modules/
+knowledge.lock
+__pycache__/
