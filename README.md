@@ -4,7 +4,8 @@
 
 `open · CC BY 4.0`
 
-https://github.com/user-attachments/assets/1c87f193-bd6a-401b-a4fd-00dcbcaeece1
+<!-- ▶ DROP VIDEO: drag memory-doctrine-summary.mp4 onto the line below in GitHub's web editor; it becomes a video player. Then delete this comment and the placeholder line. -->
+**▶ Overview video placeholder** — drag-and-drop `memory-doctrine-summary.mp4` here (~32s).
 
 ```mermaid
 flowchart TD
@@ -18,85 +19,130 @@ flowchart TD
     class O o
 ```
 
-That stack isn't aspirational — all three layers are in this repo:
+All three layers are in this repo:
 
 - **The theory** → [`axioms/`](axioms) + [`clusters/`](clusters) — the cited truths, in seven themes.
-- **The standard** → [`scripts/doctrine_lint.py`](scripts/doctrine_lint.py) — the mechanical checker every package must pass.
+- **The standard** → [`scripts/doctrine_lint.py`](scripts/doctrine_lint.py) — the checker every package must pass.
 - **The tool** → [`tools/package-research`](tools/package-research) — turns your notes into a conformant package.
 - **The open edges** → [`OPEN-QUESTIONS.md`](OPEN-QUESTIONS.md) — what the standard hasn't settled yet.
 
 ## The problem
 
-Every AI agent has memory — a vector store, a RAG pipeline, a "memory" feature. But those are all just the *bottom* layer: a tool floating on nothing. The field has no shared, evidence-based answer to what memory *is* or what makes it good, so everyone rebuilds the same intuitions, benchmark by benchmark.
+Every AI agent has memory — a vector store, a retrieval pipeline, a "memory" feature. But each of those is only the bottom layer: an implementation with no shared, evidence-based account of what memory *is* or what makes it good. So teams rebuild the same intuitions, benchmark by benchmark.
 
-The Memory Doctrine is the **whole stack** — a real theory, the standard that follows from it, and a tool that runs on both. Each layer earns the next: because the theory is sound, the standard is principled; because the standard is concrete, the tool is real.
+The Memory Doctrine covers all three layers — a theory, the standard that follows from it, and a tool that runs on both. The theory defines the standard; the standard defines what the tool must produce.
 
 ---
 
 ## 1 · The theory — how memory actually works
 
-Distilled from research across psychology, neuroscience, information theory, and AI into a short set of **cited, confidence-weighted truths** about memory. You don't need to read every note — here's the core in five ideas:
+<!-- ▶ DROP VIDEO: drag memory-doctrine-theory.mp4 onto the line below in GitHub's web editor; it becomes a video player. Then delete this comment and the placeholder line. -->
+**▶ Theory video placeholder** — drag-and-drop `memory-doctrine-theory.mp4` here (45s).
 
-1. **It's a network, and the connections are the point.** What a fact *means* is what it's connected to — value lives in the links, not the nodes.
-2. **Remembering is reconstruction, not lookup.** You rebuild a memory from a cue. (The math for it is the same math as "attention" inside AI models — an embedding store *is* a kind of memory.)
-3. **"Sure," "true," and "easy to recall" are three different things.** Confidence must be *earned by evidence*, not from how familiar something feels. Confuse them and you get *confident-but-wrong* — the root of both human false memory and AI hallucination.
-4. **You forget the path, not the memory — and surprise is the trigger to learn.** What tells memory to write something *new* is surprise: the gap between expected and actual.
-5. **To keep knowledge, keep only the ideas that generate the rest.** Find the few load-bearing truths, cite them, and build from there.
+> **Memory is a network of generative, confidence-weighted truths** — a graph of ideas where the value lives in the *connections*, each idea carries an *earned* degree of belief, and a few load-bearing ideas *generate* the rest.
 
-The theory is organized into **seven themes**, each answering one question about memory:
+Distilled from research across psychology, neuroscience, information theory, AI, and epistemology into **23 cited axioms in seven themes** (the *confidence* in parentheses is how well-evidenced each is, 0–1):
 
-| Theme | The question it answers | The headline idea |
+| Theme | The question | The load-bearing finding |
 |---|---|---|
-| **[Structure](clusters/A-structure.md)** | How is knowledge shaped? | The value is in the connections, not the facts |
-| **[Retrieval](clusters/B-retrieval.md)** | How is it recalled? | Remembering is reconstruction — the same math as AI attention |
-| **[Truth](clusters/C-truth.md)** | How sure, and how do we know? | Confidence must be earned by evidence, kept apart from familiarity |
-| **[Dynamics](clusters/D-dynamics.md)** | How does it change over time? | You lose the path, not the belief; surprise drives new learning |
-| **[Method](clusters/E-method.md)** | How do you build and check it? | Keep the load-bearing ideas; verify them adversarially |
-| **[Meta](clusters/F-meta.md)** | What does it know about itself? | Where the deepest unifications live |
-| **[Prospective](clusters/G-prospective.md)** | How does an agent remember to *act*? | Tie reminders to things you'll naturally pass by |
+| **Structure** | How is knowledge shaped? | Value lives in the **connections, not the nodes** — a note's retrieval budget is finite and splits *logarithmically* across its links, so a junk link measurably dilutes recall of the rest *(0.90)*. One idea per note. |
+| **Retrieval** | How is it recalled? | Remembering is **cue-based pattern completion** — and in its formal form, the modern Hopfield update and transformer attention are the same equation *(0.95)*. Recall needs a **sparse index that completes into a rich store** — never merged *(0.92)*. |
+| **Truth** | How sure, and how do we know? | **Confidence is earned by evidence** *(0.92)* — and it is *not* truth: in any gist-based store, confidently-false memories are a normal, priced outcome *(0.92)*. Sureness, importance, and recall are **three different things, never collapsed** *(0.93)*. |
+| **Dynamics** | How does it change? | You lose the **path, not the belief** — recall fades; confidence doesn't *(0.92)*. Memory re-opens for writing **only under surprise** *(0.85)*. |
+| **Method** | How do you build and check it? | Knowledge distills in **bounded layers** — the generative idea on top, elaboration and evidence beneath *(0.93)*. A belief locks only after an **adversarial challenge + a citation check** *(0.93)*. |
+| **Meta** | What does it know about itself? | The deep unifications: prediction error is **one quantity behind learning, salience, and belief-revision** — the *Surprise Principle* *(0.88)*; and the geometry of retrieval and the index/store split are **structurally one object — a cognitive map** *(0.83)*. |
+| **Prospective** | How does it remember to *act*? | Bind reminders to **things you'll naturally pass by**, not a polling loop *(0.82)*; an open intention stays active and must be *switched off* on completion, not just flagged done *(0.74)*. |
 
-Each idea is its own short, cited note — [browse them all](axioms). Every claim traces to primary research and was put through adversarial review before it was accepted.
+Three results worth pulling out:
+
+- **Retrieval is associative.** An embedding store behaves as an associative memory — so the geometry of your vectors is the structure of your memory.
+- **Confidence isn't truth.** Mistaking "feels fluent" for "is true" is the shared root of human false memory *and* AI hallucination — so confidence must be earned, scored, and kept apart from recall.
+- **Surprise is the write signal.** Memory updates on the gap between expected and actual.
+
+**Built adversarially, scored honestly.** Every axiom is confidence-scored and cited to primary research; the set survived three independent red-team rounds and a full-text citation purge, and the errors that caught are reported, not hidden. The weakest planks (scored 0.74 and 0.82) are flagged provisional. The full argument and rigor trail are in the project's thesis — *being prepared for this repo*.
 
 ---
 
 ## 2 · The standard — what a well-formed knowledge package is
 
-The theory doesn't just describe memory; it tells you **what a good unit of knowledge should look like.** A *knowledge package* built to the doctrine is:
+<!-- ▶ DROP VIDEO: drag memory-doctrine-standard.mp4 onto the line below in GitHub's web editor; it becomes a video player. Then delete this comment and the placeholder line. -->
+**▶ Standard video placeholder** — drag-and-drop `memory-doctrine-standard.mp4` here (~48s).
 
-- a **thin index** of ideas, each one **confidence-weighted** (the score earned from evidence),
-- pointing to a **rich store** of the cited sources behind them,
-- with **typed links** between ideas, and the **rules for revising them** shipped alongside.
+The theory doesn't just describe memory; it determines what a unit of knowledge should look like. Every rule of the standard traces to a finding above — nothing here is arbitrary:
 
-That's the standard — and it's mechanically checkable: a small linter enforces it, and the package installs and validates with `kpm doctor`. The doctrine **is its own reference implementation** of the standard: this repo is a knowledge package that obeys every rule it states.
+| A knowledge package must… | …because the theory says | …which on disk means |
+|---|---|---|
+| hold **one idea per note** | knowledge is atomic and composable | each axiom note is self-contained |
+| be a **thin index over a rich store** | recall splits the index from the store | `axioms/` point into `evidence/` — never merged |
+| **score each idea's confidence**, from evidence | confidence must be earned | `confidence: 0–1`, backed by its cited evidence |
+| keep **sureness, importance, recall separate** | they are three different orderings | distinct fields — never one "importance" number |
+| use **typed, weighted links** | value is in fan-budgeted edges | `relations:` with typed edges |
+| be **distilled in layers** | knowledge layers from generator to evidence | generator on top, elaboration, evidence beneath |
+| **lock only after an adversarial challenge** | beliefs survive refutation first | `status: candidate → locked` |
+| **carry its own revision rules** | memory revises on new evidence | `contradicts` edges + append-only evidence |
+
+So one idea is one Markdown note with a structured header — the standard *is* a file format:
+
+```yaml
+id: B4-index-store-split
+type: axiom
+cluster: B-retrieval
+statement: "A sparse index pattern-completes into a rich store — never merge them…"
+generativity: 5          # how much else derives from it
+confidence: 0.92         # earned from the cited evidence, not from how it sounds
+status: locked           # survived an adversarial challenge
+relations:
+  supports: [B1-spreading-activation]
+  contradicts: []
+evidence: [teyler-discenna-1986, mcclelland-1995]   # → into the rich store
+```
+
+**A checker verifies it.** A small script ([`scripts/doctrine_lint.py`](scripts/doctrine_lint.py)) checks every rule above: confidence values in range, each axiom cites evidence that actually exists, every link points to a real note, and every evidence note records its source and the date it was checked. The package also passes the package manager's own structural check (`kpm doctor`). A package that fails these checks isn't valid.
+
+**The doctrine follows its own rules.** This repository is itself a package built to the standard — 23 axiom notes indexing 41 evidence notes, each scored and linked, passing the checker. If the rules couldn't be met, the doctrine couldn't have been written to them.
 
 ---
 
-## 3 · The tool — turn your knowledge into a package
+## 3 · The tool — turning notes into a package
 
-`package-research` is the standard, made runnable — and it lives in this repo, at [`tools/package-research`](tools/package-research). Point it at a folder of notes, research, or transcripts and it runs the doctrine's pipeline — distilling the load-bearing ideas, scoring their confidence from the evidence, splitting index from store, and verifying each — to produce a clean, cited package that passes the standard.
+<!-- ▶ DROP VIDEO: drag memory-doctrine-tool.mp4 onto the line below in GitHub's web editor; it becomes a video player. Then delete this comment and the placeholder line. -->
+**▶ Tool video placeholder** — drag-and-drop `memory-doctrine-tool.mp4` here (~50s).
+
+[`package-research`](tools/package-research) takes a folder of raw notes — research, transcripts, scratch files — and produces a package that passes the checker. It runs the doctrine's method as a pipeline:
 
 ```mermaid
 flowchart LR
-    N["messy notes<br/>research · experience"] --> A["keep the<br/>load-bearing ideas"]
+    N["messy<br/>notes"] --> A["distill the<br/>load-bearing ideas"]
     A --> B["score confidence<br/>from evidence"]
-    B --> C["split a short index<br/>from the details"]
-    C --> V["verify each idea"]
-    V --> K["a clean, cited<br/>knowledge package"]
-    classDef step fill:#161b22,stroke:#f0883e,color:#e6edf3
+    B --> V["verify —<br/>drop the unsupported"]
+    V --> S["split index<br/>from store"]
+    S --> K["a cited, checked<br/>knowledge package"]
+    classDef step fill:#161b22,stroke:#30363d,color:#e6edf3
     classDef out fill:#f0883e,stroke:#7a4a25,color:#0d1117
-    class N,A,B,C,V step
+    class N,A,B,V,S step
     class K out
 ```
 
+1. **Read** the notes and split them into passages, each tagged with where it came from.
+2. **Distill** the few load-bearing ideas out of the passages.
+3. **Score** each idea's confidence from the evidence actually present — not from how it reads.
+4. **Verify** by trying to refute each idea and checking it cites a real source; unsupported ones are dropped.
+5. **Split** what survives into a thin index and a rich evidence store, cross-linked.
+6. **Write and check** the package — run the linter and `kpm doctor`.
+
+It runs two ways:
+
+- **With an API key**, a model does the distilling, scoring, and verifying.
+- **Keyless** — an AI assistant you're already working with does that judgment, and the tool handles the structuring and the checks. Either way the output passes the same gates.
+
 ```bash
-# from a clone of this repo:
 cd tools/package-research && pip install -e .
 package-research run ./my-notes --out ./my-kpm
 ```
 
-It runs two ways: with an API key it does the distilling itself; or in **keyless "skill mode"** an AI agent drives it — the agent does the judgment, the tool guarantees the structure. Either way the output passes the same gates. → [how it works](tools/package-research)
+The judgment steps — which ideas, how confident — vary with the model or agent; the structure and the checks don't, so the result is always a valid package even when the thinking varies. There are example input notes in [`tools/package-research/examples`](tools/package-research/examples), and the internals are documented in [`ARCHITECTURE.md`](tools/package-research/ARCHITECTURE.md).
 
-"Summarize my notes" becomes "distill my notes into cited, confidence-weighted, reusable knowledge."
+**One honest boundary.** It checks that each idea cites a real passage *from your notes* — it doesn't fact-check against the open web. And it organizes notes you already have; researching a topic from scratch is a separate, larger job.
 
 ---
 
@@ -107,10 +153,10 @@ The three layers are tied together *and* open (CC BY 4.0), so a win anywhere pro
 - **Challenge an axiom** → the theory sharpens → the standard it defines sharpens → the tool produces better packages.
 - **Improve the tool** → it stress-tests the standard → which feeds back into the theory.
 
-Most memory systems are a closed bottom layer. This is an open stack that **gets better as a whole** — every adopter who challenges a claim or improves the tool improves the foundation for everyone.
+Most memory systems are a closed bottom layer. Here all three are open, so a correction anywhere propagates: challenge a claim and the standard it defines tightens; improve the tool and it stress-tests the standard.
 
 ## Challenge it
 
-This doctrine is **made to be argued with.** Open an issue titled `challenge: <idea>` with a real citation, and a well-supported objection will lower an idea's confidence, narrow it, or retire it. See **[CONTRIBUTING.md](CONTRIBUTING.md)** — and **[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)** for the gaps the standard hasn't settled yet. The fastest way to improve the whole stack is to try to break the theory it rests on.
+This doctrine is **made to be argued with.** Open an issue titled `challenge: <idea>` with a real citation, and a well-supported objection will lower an idea's confidence, narrow it, or retire it. See **[CONTRIBUTING.md](CONTRIBUTING.md)** — and **[OPEN-QUESTIONS.md](OPEN-QUESTIONS.md)** for the gaps the standard hasn't settled yet.
 
 *Licensed [CC BY 4.0](LICENSE) — adapt and improve freely, with attribution.*
