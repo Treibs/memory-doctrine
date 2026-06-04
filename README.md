@@ -44,7 +44,7 @@ Three results worth pulling out:
 - **Confidence isn't truth.** Mistaking "feels fluent" for "is true" is the shared root of human false memory *and* AI hallucination — so confidence must be earned, scored, and kept apart from recall.
 - **Surprise is the write signal.** Memory updates on the gap between expected and actual.
 
-**Built adversarially, scored honestly.** Every axiom is confidence-scored and cited to primary research; the set survived three independent red-team rounds and a full-text citation purge, and the errors that caught are reported, not hidden. The weakest planks (scored 0.74 and 0.82) are flagged provisional. The full argument and rigor trail are in the project's thesis — *being prepared for this repo*.
+**Built adversarially, scored honestly.** Every axiom is confidence-scored and cited to primary research; the set survived three independent red-team rounds and a full-text citation purge, and the errors that caught are reported, not hidden. The weakest planks (scored 0.74 and 0.82) are flagged provisional. The full argument and rigor trail are in **[the thesis](thesis/THESIS.md)**.
 
 ---
 
