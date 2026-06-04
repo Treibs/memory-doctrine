@@ -39,9 +39,7 @@ from .split import AxiomNote, EvidenceNote, _slugify
 # path is the fallback for when that symlink can't be followed (partial checkout).
 _PARENTS = Path(__file__).resolve().parents
 _VENDOR_LINT = _PARENTS[2] / "vendor" / "doctrine_lint.py"
-_CANONICAL_LINT = (
-    _PARENTS[4] / "scripts" / "doctrine_lint.py" if len(_PARENTS) > 4 else None
-)
+_CANONICAL_LINT = _PARENTS[4] / "scripts" / "doctrine_lint.py" if len(_PARENTS) > 4 else None
 
 _RELATION_KEYS = (
     "derives-from",

@@ -80,8 +80,7 @@ def _resolve_kpm() -> Optional[List[str]]:
         p = Path(override)
         if not p.is_file():
             print(
-                f"warning: PACKAGE_RESEARCH_KPM={override!r} is not a file; "
-                "skipping kpm doctor.",
+                f"warning: PACKAGE_RESEARCH_KPM={override!r} is not a file; skipping kpm doctor.",
                 file=sys.stderr,
             )
             return None
@@ -90,16 +89,14 @@ def _resolve_kpm() -> Optional[List[str]]:
             if node:
                 return [node, str(p)]
             print(
-                "warning: PACKAGE_RESEARCH_KPM points to a .js file but 'node' is "
-                "not on PATH; skipping kpm doctor.",
+                "warning: PACKAGE_RESEARCH_KPM points to a .js file but 'node' is not on PATH; skipping kpm doctor.",
                 file=sys.stderr,
             )
             return None
         if os.access(p, os.X_OK):
             return [str(p)]
         print(
-            f"warning: PACKAGE_RESEARCH_KPM={override!r} is not executable; "
-            "skipping kpm doctor.",
+            f"warning: PACKAGE_RESEARCH_KPM={override!r} is not executable; skipping kpm doctor.",
             file=sys.stderr,
         )
         return None
