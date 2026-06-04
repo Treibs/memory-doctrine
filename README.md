@@ -4,7 +4,7 @@
 
 **23 axioms · 41 cited sources · 4 operators · 7 clusters · adversarially red-teamed · passes `kpm doctor` · [CC BY 4.0](LICENSE)**
 
-<!-- For an inline autoplay player: edit this file on github.com, drag-drop assets/../memory-doctrine-explainer.mp4 into the editor, and replace the poster line below with the github.com/user-attachments/... URL it produces. -->
+<!-- INLINE PLAYER: to make the video autoplay inline, edit this file on github.com, drag-drop the explainer .mp4 (the ~3-min cut) into the editor, then replace the poster line below with the github.com/user-attachments/... URL GitHub generates. -->
 [![Watch the full explainer of the Memory Doctrine](assets/explainer-poster.png)](https://github.com/SolanaFox2/memory-doctrine/releases/download/v1.1.0/memory-doctrine-explainer-v2.mp4)
 
 > ▶ **[Watch the full explainer](https://github.com/SolanaFox2/memory-doctrine/releases/download/v1.1.0/memory-doctrine-explainer-v2.mp4)** (~3 min, silent) — the research, a tour of all seven clusters, the four core insights *explained*, and what we propose.
