@@ -12,7 +12,12 @@ def _parse(p: Path):
     text = p.read_text()
     if not text.startswith("---"):
         return {}, text
-    _, fm, body = text.split("---", 2)
+    # Split on a LINE-ANCHORED `---` only, so a `---` inside a frontmatter
+    # value (e.g. a URL like ".../sealevel---parallel...") can't truncate it.
+    parts = re.split(r"(?m)^---[ \t]*$", text, maxsplit=2)
+    if len(parts) < 3:
+        return {}, text
+    _, fm, body = parts
     try:
         return (yaml.safe_load(fm) or {}), body
     except yaml.YAMLError:
