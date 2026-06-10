@@ -1,4 +1,4 @@
-# @kpm/research-build
+# @kpm/raft-thesis
 
 Establish, from primary sources, how the Raft consensus algorithm works at thesis depth as precise atomic facts — covering not only the core algorithm but persistence/liveness, read-only requests, leadership transfer/Pre-Vote/CheckQuorum, the formal TLA+ verification and evaluation, related work, the Figure-2 implementer contract, the Figure-8 commitment hazard with the full Leader-Completeness proof, and membership/snapshot subtleties.
 
