@@ -83,6 +83,7 @@ class AxiomNote:
     evidence: List[str]
     provenance: str
     rationale: str = ""
+    cluster: "Optional[str]" = None   # thematic cluster id (set by the cluster stage)
 
 
 @dataclass

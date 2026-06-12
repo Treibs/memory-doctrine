@@ -30,8 +30,9 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
+from .cluster import ClusterNote, render_cluster
 from .split import AxiomNote, EvidenceNote, _slugify
 
 # The vendored validator ships inside the package (so it survives a wheel/pip
@@ -58,6 +59,11 @@ class AssembleResult:
     output_dir: Path
     axioms_written: List[str]
     evidence_written: List[str]
+    clusters_written: List[str] = None  # type: ignore[assignment]
+
+    def __post_init__(self):
+        if self.clusters_written is None:
+            self.clusters_written = []
 
 
 def _yaml_str(value) -> str:
@@ -110,7 +116,8 @@ def render_axiom(axiom: AxiomNote, evidence_ids: List[str]) -> str:
         "---\n"
         f"id: {_yaml_id(axiom.id)}\n"
         "type: axiom\n"
-        f"title: {_yaml_str(axiom.title)}\n"
+        + (f"cluster: {axiom.cluster}\n" if getattr(axiom, "cluster", None) else "")
+        + f"title: {_yaml_str(axiom.title)}\n"
         f"statement: {_yaml_str(axiom.statement)}\n"
         f"domain: {_yaml_str('distilled')}\n"
         f"generativity: {axiom.generativity}\n"
@@ -291,6 +298,7 @@ def assemble(
     name: str = "@kpm/distilled-research",
     description: str = "A doctrine-grounded knowledge package distilled from source notes.",
     version: str = "0.1.0",
+    clusters: Optional[List[ClusterNote]] = None,
 ) -> AssembleResult:
     """Write the kpm package to ``output_dir`` deterministically.
 
@@ -324,6 +332,30 @@ def assemble(
         axiom_to_evids[ax.id] = resolvable
         needed_evidence_ids.update(resolvable)
 
+    # Reconcile clusters against the axioms actually emitted: a cluster note
+    # only ships with >=2 surviving members, and no axiom may point at a
+    # cluster that is not written (the lint rejects dangling pointers).
+    kept_clusters: List[ClusterNote] = []
+    emitted_ids = {ax.id for ax in emitted_axioms}
+    for c in clusters or []:
+        members = [m for m in c.members if m in emitted_ids]
+        if len(members) >= 2:
+            kept_clusters.append(ClusterNote(id=c.id, title=c.title, members=members))
+    valid_cluster_ids = {c.id for c in kept_clusters}
+    for ax in emitted_axioms:
+        if getattr(ax, "cluster", None) and ax.cluster not in valid_cluster_ids:
+            ax.cluster = None
+        # Relation targets must resolve to emitted axioms (lint rule) — an
+        # edge to a dropped axiom is stripped, never shipped dangling.
+        rels = ax.relations or {}
+        for k in _RELATION_KEYS:
+            if k == "applies-to-kpm":
+                continue
+            targets = rels.get(k) or []
+            kept_targets = [tgt for tgt in targets if tgt in emitted_ids]
+            if len(kept_targets) != len(targets):
+                rels[k] = kept_targets
+
     # Write axioms.
     axioms_written: List[str] = []
     for ax in emitted_axioms:
@@ -348,6 +380,14 @@ def assemble(
         )
         evidence_written.append(eid)
 
+    # Write cluster notes (the package's emergent themes, EFF-4).
+    clusters_written: List[str] = []
+    if kept_clusters:
+        (output_dir / "clusters").mkdir(exist_ok=True)
+        for c in kept_clusters:
+            (output_dir / "clusters" / f"{c.id}.md").write_text(render_cluster(c), encoding="utf-8")
+            clusters_written.append(c.id)
+
     # Manifest, README, and the vendored self-validator.
     (output_dir / "knowledge.json").write_text(
         json.dumps(
@@ -364,4 +404,5 @@ def assemble(
         output_dir=output_dir,
         axioms_written=axioms_written,
         evidence_written=evidence_written,
+        clusters_written=clusters_written,
     )

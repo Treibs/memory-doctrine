@@ -37,6 +37,7 @@ from pathlib import Path
 from typing import List, Optional, Sequence
 
 from .assemble import assemble, write_reference_notes
+from .cluster import cluster_axioms
 from .config import Config
 from .distill import distill
 from .ingest import Candidate, ingest, passages_by_source
@@ -277,12 +278,16 @@ def _cmd_run(args: argparse.Namespace) -> int:
     axioms, evidence = split(verified, pbs, survived_challenge=True)
     # Relate pass: the package's value lives in the connections (EFF-1).
     rel_stats = relate_axioms(axioms, complete_json)
+    # Cluster pass: connected components of the relation graph are the
+    # package's emergent themes (EFF-4). Deterministic, no LLM call.
+    clusters = cluster_axioms(axioms)
 
     name = args.name or "@kpm/distilled-research"
     assemble(
         axioms,
         evidence,
         config.output_dir,
+        clusters=clusters,
         run_date=run_date,
         name=name,
     )
