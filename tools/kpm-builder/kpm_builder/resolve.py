@@ -13,6 +13,7 @@ not ~75.
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -369,12 +370,26 @@ def resolve_kpm(kpm_dir: str | Path, *, complete_json, resolved: str) -> list[Re
     axiom_evidence = {a.id: a.evidence_ids for a in axioms}
     evidence_passages = read_evidence(kpm_dir)
 
+    # Per-contradiction isolation: one failed resolution must not abort the
+    # stage and discard prior resolutions (each costs 2-3 grounded LLM calls).
     out: list[Resolution] = []
+    skipped = 0
     for cand in detect_contradictions(kpm_dir):
-        res = resolve(cand, statements, evidence_passages, axiom_evidence,
-                      complete_json=complete_json)
-        record_resolution(kpm_dir, res, resolved=resolved)
+        try:
+            res = resolve(cand, statements, evidence_passages, axiom_evidence,
+                          complete_json=complete_json)
+            record_resolution(kpm_dir, res, resolved=resolved)
+        except Exception as exc:  # noqa: BLE001 - isolate per contradiction
+            skipped += 1
+            print(
+                f"warning: resolve: failed for {cand.a_id} ↔ {cand.b_id}, "
+                f"skipping (contradiction stays open): {exc}",
+                file=sys.stderr,
+            )
+            continue
         out.append(res)
+    if skipped:
+        print(f"warning: resolve: skipped {skipped} contradiction(s) on failure", file=sys.stderr)
     return out
 
 
