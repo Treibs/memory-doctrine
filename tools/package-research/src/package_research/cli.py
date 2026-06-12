@@ -40,6 +40,7 @@ from .assemble import assemble, write_reference_notes
 from .config import Config
 from .distill import distill
 from .ingest import Candidate, ingest, passages_by_source
+from .relate import RelateStats, relate_axioms
 from .llm import LLMClient
 from .llm_core import malformed_counts, reset_malformed
 from .score import ScoredIdea, score
@@ -177,6 +178,7 @@ def _summarize(
     uncited: "Optional[List[str]]" = None,
     kept_uncited: bool = False,
     malformed: "Optional[dict]" = None,
+    relations: "Optional[RelateStats]" = None,
 ) -> None:
     """Print a clear, human-readable run summary."""
     print("package-research run complete", file=out)
@@ -184,6 +186,14 @@ def _summarize(
     print(f"  ideas distilled     : {n_ideas}", file=out)
     print(f"  ideas scored        : {n_scored}", file=out)
     print(f"  kept after verify   : {n_kept}", file=out)
+    if relations is not None:
+        extra = ""
+        if relations.capped or relations.skipped:
+            extra = f" (capped {relations.capped}, skipped {relations.skipped})"
+        print(
+            f"  relations verified  : {relations.verified}/{relations.proposed}{extra}",
+            file=out,
+        )
 
     # Malformed model outputs are never silent (an all-malformed run must be
     # distinguishable from a legitimate "nothing survived").
@@ -265,6 +275,8 @@ def _cmd_run(args: argparse.Namespace) -> int:
     # Preserve the source content in the store (keep details, not just headlines).
     pbs = passages_by_source(candidates)
     axioms, evidence = split(verified, pbs)
+    # Relate pass: the package's value lives in the connections (EFF-1).
+    rel_stats = relate_axioms(axioms, complete_json)
 
     name = args.name or "@kpm/distilled-research"
     assemble(
@@ -295,6 +307,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         uncited=sorted(uncited),
         kept_uncited=getattr(args, "keep_uncited", False),
         malformed=malformed_counts(),
+        relations=rel_stats,
     )
 
     # Lint is the hard gate: a structurally invalid package is a failure.

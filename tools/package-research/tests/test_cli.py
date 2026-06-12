@@ -11,9 +11,12 @@ produced and that it is doctrine-lint clean.
 import subprocess
 import sys
 
+import re
+
 import pytest
 from package_research import cli
 from package_research.distill import DISTILL_SCHEMA
+from package_research.relate import PROPOSE_SCHEMA as RELATE_PROPOSE_SCHEMA, VERIFY_SCHEMA as RELATE_VERIFY_SCHEMA
 from package_research.score import SCORE_SCHEMA
 from package_research.verify import VERIFY_SCHEMA
 
@@ -68,6 +71,17 @@ class _FakeLLM:
                 "reason": "snippet establishes the claim",
                 "adjusted_confidence": 0.75,
             }
+        if schema is RELATE_PROPOSE_SCHEMA:
+            # Parse the listed axiom ids and propose one supports edge so the
+            # e2e run exercises relations end-to-end.
+            ids = re.findall(r"(?m)^- (\S+):", prompt)
+            if len(ids) >= 2:
+                return {"relations": [
+                    {"from_id": ids[0], "to_id": ids[1], "type": "supports", "rationale": "r"}
+                ]}
+            return {"relations": []}
+        if schema is RELATE_VERIFY_SCHEMA:
+            return {"holds": True, "reason": "confirmed"}
         raise AssertionError(f"unexpected schema: {schema}")
 
 

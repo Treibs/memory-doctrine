@@ -95,9 +95,15 @@ def render_axiom(axiom: AxiomNote, evidence_ids: List[str]) -> str:
 
     ``evidence_ids`` is the *filtered* list of evidence ids that actually have a
     written note — every one gets a ``[[id]]`` wikilink in the body so the lint's
-    relation/wikilink checks (and human navigation) resolve.
+    relation/wikilink checks (and human navigation) resolve. The axiom's typed
+    relations (from the relate pass) are rendered into the frontmatter, and
+    every relation target gets a matching ``[[wikilink]]`` in the body — the
+    doctrine's value lives in these connections (REVIEW.md EFF-1).
     """
-    rel_lines = "\n".join(f"  {k}: []" for k in _RELATION_KEYS)
+    relations = axiom.relations or {}
+    rel_lines = "\n".join(
+        f"  {k}: [{', '.join(relations.get(k) or [])}]" for k in _RELATION_KEYS
+    )
     ev_inline = "[" + ", ".join(evidence_ids) + "]"
 
     fm = (
@@ -109,7 +115,7 @@ def render_axiom(axiom: AxiomNote, evidence_ids: List[str]) -> str:
         f"domain: {_yaml_str('distilled')}\n"
         f"generativity: {axiom.generativity}\n"
         f"confidence: {axiom.confidence}\n"
-        "status: candidate\n"
+        f"status: {axiom.status}\n"
         "relations:\n"
         f"{rel_lines}\n"
         f"evidence: {ev_inline}\n"
@@ -119,6 +125,18 @@ def render_axiom(axiom: AxiomNote, evidence_ids: List[str]) -> str:
 
     links = ", ".join(f"[[{eid}]]" for eid in evidence_ids)
     body = f"\n# {axiom.title}\n\n{axiom.statement}\n\nEvidence: {links}.\n"
+
+    # Relation targets need a matching wikilink in the body (lint rule).
+    rel_targets: List[str] = []
+    for k in _RELATION_KEYS:
+        if k == "applies-to-kpm":
+            continue
+        for tgt in relations.get(k) or []:
+            if tgt not in rel_targets:
+                rel_targets.append(tgt)
+    if rel_targets:
+        rel_links = ", ".join(f"[[{t}]]" for t in rel_targets)
+        body += f"\nRelated: {rel_links}.\n"
     return fm + body
 
 
