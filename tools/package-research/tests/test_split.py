@@ -287,3 +287,23 @@ def test_split_enrichment_keeps_cited_snippet_first():
     note = evidence[0]
     assert note.snippets[0] == "the exact cited line"          # snippet survives, first
     assert any("surrounding context" in s for s in note.snippets)  # store appended
+
+
+# ── belief-state promotion (#5 / EFF-2) ─────────────────────────────────────────
+
+
+def test_split_promotes_challenge_survivors():
+    """Run-path survivors passed citation + adversarial gates: confident ones
+    lock, weak-evidence ones go provisional (REVIEW.md EFF-2)."""
+    strong = _scored("Strong well-evidenced claim.", ["a.md"], ["snip"], confidence=0.8)
+    weak = _scored("Weak but surviving claim.", ["b.md"], ["snip"], confidence=0.3)
+    axioms, _ = split([strong, weak], survived_challenge=True)
+    by_stmt = {a.statement: a.status for a in axioms}
+    assert by_stmt["Strong well-evidenced claim."] == "locked"
+    assert by_stmt["Weak but surviving claim."] == "provisional"
+
+
+def test_split_default_keeps_candidate_for_unchallenged_ideas():
+    """Skill-mode build ideas were not challenged by the tool — no promotion."""
+    axioms, _ = split([_scored("Unchallenged claim.", ["a.md"], ["snip"], confidence=0.9)])
+    assert axioms[0].status == "candidate"

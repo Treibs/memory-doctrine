@@ -274,7 +274,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
     verified = verify(scored, complete_json)
     # Preserve the source content in the store (keep details, not just headlines).
     pbs = passages_by_source(candidates)
-    axioms, evidence = split(verified, pbs)
+    axioms, evidence = split(verified, pbs, survived_challenge=True)
     # Relate pass: the package's value lives in the connections (EFF-1).
     rel_stats = relate_axioms(axioms, complete_json)
 

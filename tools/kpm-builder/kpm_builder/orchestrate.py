@@ -60,7 +60,7 @@ from kpm_builder.label import (
 )
 from kpm_builder.schema import ConfidenceBucket, ScoredIdea, SourceTier
 from kpm_builder.snapshot import Snapshot, passage_span, snapshot
-from kpm_builder.strip import strip
+from kpm_builder.strip import apply_belief_status, strip
 
 # Organizer tail
 from package_research.assemble import assemble
@@ -301,6 +301,8 @@ def build_mvp(
     # if nothing is shippable, assemble an empty package (lint will pass because
     # the assemble stage drops zero-evidence axioms cleanly).
     axioms, evidence = organizer_split(organizer_ideas, source_passages=None)
+    # Grounded claims earn their doctrine status from their bucket (EFF-2).
+    apply_belief_status(axioms, internal_ideas)
 
     out_dir = Path(out_dir)
     assemble(

@@ -162,15 +162,33 @@ def uncited_sources(
     return out
 
 
+#: A challenge survivor at or above this confidence locks; below, it is
+#: provisional (a survivor with thin evidence is believed, but tentatively).
+LOCK_CONFIDENCE_FLOOR = 0.7
+
+
+def _survivor_status(confidence: float) -> str:
+    return "locked" if confidence >= LOCK_CONFIDENCE_FLOOR else "provisional"
+
+
 def split(
     scored_ideas: List[ScoredIdea],
     source_passages: Optional[Dict[str, List[str]]] = None,
+    *,
+    survived_challenge: bool = False,
 ) -> Tuple[List[AxiomNote], List[EvidenceNote]]:
     """Build axiom (index) + evidence (store) notes from scored ideas.
 
     Returns ``(axiom_notes, evidence_notes)``. Evidence is de-duplicated by
     source so shared sources become one note. Every id in an axiom's
     ``evidence`` list is guaranteed to resolve to an emitted evidence note.
+
+    ``survived_challenge=True`` records that these ideas already passed the
+    citation-presence gate AND the adversarial verify stage (the run path
+    drops non-survivors before split). The doctrine's belief-state machine
+    then promotes them past ``candidate``: ``locked`` for confident survivors,
+    ``provisional`` for weak-evidence ones (REVIEW.md EFF-2). Skill-mode
+    ``build`` ideas are unchallenged by the tool and stay ``candidate``.
 
     ``source_passages`` (``{filename: [passage, ...]}``, from
     :func:`ingest.passages_by_source`) makes the store **rich**: when a cited
@@ -226,7 +244,7 @@ def split(
                 statement=idea.statement.strip(),
                 confidence=idea.confidence,
                 generativity=idea.generativity,
-                status="candidate",
+                status=_survivor_status(idea.confidence) if survived_challenge else "candidate",
                 relations=_empty_relations(),
                 evidence=cited_ev_ids,
                 provenance="package-research/distilled",

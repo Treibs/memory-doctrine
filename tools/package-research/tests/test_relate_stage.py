@@ -133,3 +133,16 @@ def test_render_axiom_ships_relations_and_wikilinks():
     assert "contradicts: [a-three]" in text
     assert "[[a-two]]" in text and "[[a-three]]" in text   # lint's wikilink rule
     assert re.search(r"(?m)^status: candidate$", text)
+
+
+def test_contradiction_between_locked_axioms_demotes_weaker(capsys):
+    """F2: a verified contradicts edge between two locked axioms demotes the
+    lower-confidence side to provisional (the contradiction is unresolved)."""
+    a, b = _axiom("a-one", "X is true."), _axiom("a-two", "X is false.")
+    a.status = b.status = "locked"
+    a.confidence, b.confidence = 0.9, 0.75
+    rows = [{"from_id": "a-one", "to_id": "a-two", "type": "contradicts"}]
+    relate_axioms([a, b], _proposer(rows))
+    assert a.status == "locked"
+    assert b.status == "provisional"
+    assert "demoting weaker" in capsys.readouterr().err

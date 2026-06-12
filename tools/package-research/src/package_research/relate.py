@@ -110,6 +110,20 @@ def _verify_prompt(rtype: str, from_stmt: str, to_stmt: str) -> str:
     )
 
 
+def _enforce_f2(a: AxiomNote, b: AxiomNote) -> None:
+    """Two locked axioms may not contradict (doctrine F2): an unresolved
+    contradiction means neither side is settled, so the weaker-confidence side
+    returns to ``provisional``. Logged — a belief demotion is never silent."""
+    if a.status == "locked" and b.status == "locked":
+        weaker = a if a.confidence <= b.confidence else b
+        weaker.status = "provisional"
+        print(
+            f"warning: relate: unresolved contradiction {a.id} <-> {b.id}; "
+            f"demoting weaker '{weaker.id}' to provisional (F2)",
+            file=sys.stderr,
+        )
+
+
 def relate_axioms(
     axioms: List[AxiomNote],
     complete_json: CompleteJSON,
@@ -189,6 +203,8 @@ def relate_axioms(
         if bool(result.get("holds")):
             by_id[from_id].relations.setdefault(rtype, []).append(to_id)
             stats.verified += 1
+            if rtype == "contradicts":
+                _enforce_f2(by_id[from_id], by_id[to_id])
     if stats.skipped:
         print(f"warning: relate: skipped {stats.skipped} edge(s) on verify failure", file=sys.stderr)
     return stats

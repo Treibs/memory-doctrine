@@ -37,7 +37,7 @@ from kpm_builder.label import (
 )
 from kpm_builder.schema import ConfidenceBucket, ScoredIdea, SourceTier
 from kpm_builder.snapshot import passage_span, snapshot
-from kpm_builder.strip import strip
+from kpm_builder.strip import apply_belief_status, strip
 
 # Organizer tail
 from package_research.assemble import assemble
@@ -221,6 +221,8 @@ def build_from_research(
         # Strip internal ideas → Organizer shape → split → assemble → validate
         organizer_ideas = strip(internal_ideas)
         axioms, evidence = organizer_split(organizer_ideas, source_passages=None)
+        # Grounded claims earn their doctrine status from their bucket (EFF-2).
+        apply_belief_status(axioms, internal_ideas)
 
         # Derive package name/description from contract.
         pkg_goal = contract.get("goal", "Knowledge Package")

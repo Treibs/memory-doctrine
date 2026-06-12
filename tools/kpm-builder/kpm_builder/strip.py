@@ -77,3 +77,28 @@ def strip(ideas: List[InternalScoredIdea]) -> List[OrganizerScoredIdea]:
         result.append(organizer_idea)
 
     return result
+
+
+# Belief-state mapping for the Builder's claims (REVIEW.md EFF-2): every claim
+# that ships through this tail passed Gate A/B and an independent grounding
+# check (and the refuter, when run), so its bucket — evidence strength — maps
+# straight onto the doctrine's status machine. UNVERIFIED stays candidate.
+_BUCKET_TO_STATUS = {
+    ConfidenceBucket.SUPPORTED: "locked",
+    ConfidenceBucket.PARTIAL: "provisional",
+    ConfidenceBucket.UNVERIFIED: "candidate",
+}
+
+
+def apply_belief_status(axioms: list, internal_ideas: List[InternalScoredIdea]) -> None:
+    """Promote each produced axiom per its claim's confidence bucket, in place.
+
+    ``axioms`` is the Organizer ``split`` output for ``strip(internal_ideas)``;
+    both pipelines are 1:1 and order-preserving, so the pairing is positional.
+    """
+    if len(axioms) != len(internal_ideas):
+        raise ValueError(
+            f"axioms/ideas misaligned: {len(axioms)} axioms vs {len(internal_ideas)} ideas"
+        )
+    for axiom, idea in zip(axioms, internal_ideas):
+        axiom.status = _BUCKET_TO_STATUS.get(idea.confidence, "candidate")
