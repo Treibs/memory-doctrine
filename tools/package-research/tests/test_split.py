@@ -270,3 +270,20 @@ def test_uncited_sources_ambiguous_basename_not_absorbed():
     out = uncited_sources(pbs, evidence)
     assert set(out) == {"2026/notes.md"}
     assert "uncited content" in out["2026/notes.md"][0]
+
+
+def test_split_enrichment_keeps_cited_snippet_first():
+    """The agent's cited snippet is the entailment record — enrichment must
+    append the preserved passages, never replace the snippet (REVIEW.md EFF-3)."""
+    ideas = [
+        _scored(
+            "Claim grounded in one exact line.",
+            ["notes.md"],
+            ["the exact cited line"],
+        )
+    ]
+    passages = {"notes.md": ["## Section\n\nlots of surrounding context"]}
+    _axioms, evidence = split(ideas, passages)
+    note = evidence[0]
+    assert note.snippets[0] == "the exact cited line"          # snippet survives, first
+    assert any("surrounding context" in s for s in note.snippets)  # store appended

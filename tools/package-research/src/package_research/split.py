@@ -241,8 +241,12 @@ def split(
 
 
 def _enrich_evidence_bodies(evidence_notes: List[EvidenceNote], source_passages: Dict[str, List[str]]) -> None:
-    """Replace each evidence note's cited-snippet body with the preserved source
-    passages where we have them, so the package keeps the details (B4 store).
+    """Append the preserved source passages to each evidence note's body, so the
+    package keeps the details (B4 store) WITHOUT discarding the cited snippet.
+
+    The agent's cited snippet is the exact line that entailed the claim — the
+    entailment record — so it stays first; the re-ingested passages follow
+    (deduped). Replacing it wholesale lost passage-scoping (REVIEW.md EFF-3).
 
     Mutates ``evidence_notes`` in place. A note is matched to its passages by
     exact ``ref`` first, then by an *unambiguous*-basename fallback (an axiom may
@@ -265,6 +269,7 @@ def _enrich_evidence_bodies(evidence_notes: List[EvidenceNote], source_passages:
                 mapped = by_basename.get(base)
                 if mapped is not None:
                     preserved = source_passages.get(mapped)
-        # Only swap in a non-empty body; otherwise keep the cited snippet.
+        # Only extend with a non-empty body; the cited snippet always survives.
         if preserved and any(p.strip() for p in preserved):
-            note.snippets = list(preserved)
+            cited = [s for s in note.snippets if s.strip()]
+            note.snippets = cited + [p for p in preserved if p not in cited]
