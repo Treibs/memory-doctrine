@@ -14,9 +14,8 @@ DeepSeek/Gemini key upgrades grounding to cross-family.
 ```bash
 git clone https://github.com/Treibs/memory-doctrine && cd memory-doctrine
 python3 -m venv .venv && source .venv/bin/activate        # recommended (avoids PEP 668 on Debian/Homebrew)
-pip install -r tools/kpm-builder/requirements.txt         # pyyaml, pydantic
-pip install -e tools/package-research                      # the Organizer (the Builder imports package_research)
-export PYTHONPATH=tools/kpm-builder:tools/package-research/src
+pip install -e tools/package-research                      # the Organizer first (the Builder imports package_research)
+pip install -e tools/kpm-builder                           # pulls pyyaml + pydantic; adds kpm-build / kpm-relate / kpm-resolve / kpm-graph-index
 # optional cross-family grounding: pip install anthropic   # then: export DEEPSEEK_API_KEY=…  (or GOOGLE_GENAI_API_KEY)
 ```
 Python 3.10+. Paths are repo-relative — run from the repo root.

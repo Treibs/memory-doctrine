@@ -83,6 +83,7 @@ class AxiomNote:
     evidence: List[str]
     provenance: str
     rationale: str = ""
+    cluster: "Optional[str]" = None   # thematic cluster id (set by the cluster stage)
 
 
 @dataclass
@@ -162,15 +163,33 @@ def uncited_sources(
     return out
 
 
+#: A challenge survivor at or above this confidence locks; below, it is
+#: provisional (a survivor with thin evidence is believed, but tentatively).
+LOCK_CONFIDENCE_FLOOR = 0.7
+
+
+def _survivor_status(confidence: float) -> str:
+    return "locked" if confidence >= LOCK_CONFIDENCE_FLOOR else "provisional"
+
+
 def split(
     scored_ideas: List[ScoredIdea],
     source_passages: Optional[Dict[str, List[str]]] = None,
+    *,
+    survived_challenge: bool = False,
 ) -> Tuple[List[AxiomNote], List[EvidenceNote]]:
     """Build axiom (index) + evidence (store) notes from scored ideas.
 
     Returns ``(axiom_notes, evidence_notes)``. Evidence is de-duplicated by
     source so shared sources become one note. Every id in an axiom's
     ``evidence`` list is guaranteed to resolve to an emitted evidence note.
+
+    ``survived_challenge=True`` records that these ideas already passed the
+    citation-presence gate AND the adversarial verify stage (the run path
+    drops non-survivors before split). The doctrine's belief-state machine
+    then promotes them past ``candidate``: ``locked`` for confident survivors,
+    ``provisional`` for weak-evidence ones (REVIEW.md EFF-2). Skill-mode
+    ``build`` ideas are unchallenged by the tool and stay ``candidate``.
 
     ``source_passages`` (``{filename: [passage, ...]}``, from
     :func:`ingest.passages_by_source`) makes the store **rich**: when a cited
@@ -226,7 +245,7 @@ def split(
                 statement=idea.statement.strip(),
                 confidence=idea.confidence,
                 generativity=idea.generativity,
-                status="candidate",
+                status=_survivor_status(idea.confidence) if survived_challenge else "candidate",
                 relations=_empty_relations(),
                 evidence=cited_ev_ids,
                 provenance="package-research/distilled",
@@ -241,8 +260,12 @@ def split(
 
 
 def _enrich_evidence_bodies(evidence_notes: List[EvidenceNote], source_passages: Dict[str, List[str]]) -> None:
-    """Replace each evidence note's cited-snippet body with the preserved source
-    passages where we have them, so the package keeps the details (B4 store).
+    """Append the preserved source passages to each evidence note's body, so the
+    package keeps the details (B4 store) WITHOUT discarding the cited snippet.
+
+    The agent's cited snippet is the exact line that entailed the claim — the
+    entailment record — so it stays first; the re-ingested passages follow
+    (deduped). Replacing it wholesale lost passage-scoping (REVIEW.md EFF-3).
 
     Mutates ``evidence_notes`` in place. A note is matched to its passages by
     exact ``ref`` first, then by an *unambiguous*-basename fallback (an axiom may
@@ -265,6 +288,7 @@ def _enrich_evidence_bodies(evidence_notes: List[EvidenceNote], source_passages:
                 mapped = by_basename.get(base)
                 if mapped is not None:
                     preserved = source_passages.get(mapped)
-        # Only swap in a non-empty body; otherwise keep the cited snippet.
+        # Only extend with a non-empty body; the cited snippet always survives.
         if preserved and any(p.strip() for p in preserved):
-            note.snippets = list(preserved)
+            cited = [s for s in note.snippets if s.strip()]
+            note.snippets = cited + [p for p in preserved if p not in cited]

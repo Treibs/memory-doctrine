@@ -273,3 +273,29 @@ def test_resolve_kpm_end_to_end(tmp_path):
     assert validate(str(kpm)).lint_ok                            # package still lints clean
     # the whole loop never touched an axiom note
     assert {f.name: f.read_bytes() for f in (kpm / "axioms").glob("*.md")} == axioms_before
+
+
+def test_resolve_kpm_isolates_per_contradiction_failures(tmp_path, capsys):
+    """One exploding resolution must not abort the stage or discard prior
+    resolutions (REVIEW.md KPM-H4)."""
+    import re as _re
+
+    kpm = _resolve_kpm(tmp_path)
+    state = {"verdict_calls": 0}
+
+    def fake(prompt, schema):
+        if "independent fact-verifier" in prompt:                 # ground.py call
+            return {"verdict": "entails", "supported_paraphrase": "", "dropped": [], "reason": ""}
+        state["verdict_calls"] += 1
+        if state["verdict_calls"] == 1:
+            raise RuntimeError("provider blew up mid-stage")
+        eid = _re.search(r"evidence (\S+):", prompt)
+        return {"status": "reconciled", "truth": "The precise figure is established by the source.",
+                "truth_passage_id": eid.group(1) if eid else "", "explanation": "rounding",
+                "basis": []}
+
+    resolutions = resolve_kpm(kpm, complete_json=fake, resolved="2026-06-05")
+    assert len(resolutions) == 1               # the survivor, not zero
+    err = capsys.readouterr().err
+    assert "skipping (contradiction stays open)" in err
+    assert "skipped 1 contradiction" in err

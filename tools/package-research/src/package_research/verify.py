@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import List
 
 from .llm import CompleteJSON
+from .llm_core import UNTRUSTED_PREAMBLE, coerce_result_dict, delimit_untrusted
 from .score import ScoredIdea
 
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "verify.md"
@@ -69,7 +70,10 @@ def has_citation(idea: ScoredIdea) -> bool:
 def _render_idea(idea: ScoredIdea) -> str:
     files = ", ".join(Path(f).name for f in idea.supporting_source_files) or "(none)"
     if idea.supporting_snippets:
-        snippets = "\n".join(f"- {s.strip()}" for s in idea.supporting_snippets)
+        # Snippets are verbatim untrusted source text — delimited as data.
+        snippets = delimit_untrusted(
+            "\n".join(f"- {s.strip()}" for s in idea.supporting_snippets)
+        )
     else:
         snippets = "(no supporting snippets present)"
     return (
@@ -83,7 +87,7 @@ def _render_idea(idea: ScoredIdea) -> str:
 def build_prompt(idea: ScoredIdea) -> str:
     """Assemble the full verify prompt: E4 rubric + the rendered idea."""
     rubric = load_prompt()
-    return f"{rubric}\n\n---\n\n{_render_idea(idea)}"
+    return f"{rubric}\n\n{UNTRUSTED_PREAMBLE}\n\n---\n\n{_render_idea(idea)}"
 
 
 def _clamp_confidence(value: object, fallback: float) -> float:
@@ -116,9 +120,9 @@ def verify_idea(idea: ScoredIdea, complete_json: CompleteJSON) -> VerificationRe
             adjusted_confidence=0.0,
         )
 
-    result = complete_json(build_prompt(idea), VERIFY_SCHEMA)
-    if not isinstance(result, dict):
-        result = {}
+    result = coerce_result_dict(
+        complete_json(build_prompt(idea), VERIFY_SCHEMA), stage="verify", required_key="survives"
+    )
 
     survives = bool(result.get("survives"))
     adjusted = _clamp_confidence(result.get("adjusted_confidence"), idea.confidence)

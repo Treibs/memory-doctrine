@@ -16,6 +16,7 @@ Design (SPEC-relate.md v1):
 from __future__ import annotations
 
 import re
+import sys
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -25,6 +26,7 @@ import yaml
 # Reuse the existing seam — do not reimplement.  The seam returns a parsed dict
 # (same contract as ground.py), so no JSON text-parsing is needed here.
 from kpm_builder.providers import CompleteJSON
+from package_research.llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
 
 # Line-anchored frontmatter split (same shape as the public linter's _parse):
 # a bare `---` inside a value can't truncate it.
@@ -71,6 +73,7 @@ class RelateResult:
     """Output of the Relate judgment stage: verified edges + cap-drop count."""
     relations: list[Relation]        # verified == True only
     capped: int = 0                  # # candidate edges dropped by the budget cap
+    skipped: int = 0                 # # candidates skipped on per-edge verify failure
 
 
 # ── parsing (no LLM) ──────────────────────────────────────────────────────────
@@ -245,8 +248,9 @@ def _verify_prompt(
     ]
     if rtype in EVIDENTIAL:
         lines += [
-            f"FROM source passage: {from_passage}",
-            f"TO source passage: {to_passage}",
+            UNTRUSTED_PREAMBLE,
+            f"FROM source passage:\n{delimit_untrusted(from_passage)}",
+            f"TO source passage:\n{delimit_untrusted(to_passage)}",
         ]
     lines.append(
         'Respond with JSON only: {"holds": <bool>, "reason": <one sentence>}.'
@@ -380,11 +384,28 @@ def relate_kpm(
     )
     guarded = apply_guards(candidates, axioms_by_id)
 
-    verified = [
-        r for c in guarded
-        if (r := verify_relation(c, axioms_by_id, passages, complete_json=complete_json)).verified
-    ]
-    return RelateResult(relations=verified, capped=capped)
+    # Per-edge isolation: one failed verification must not abort the stage and
+    # discard every previously verified edge (a build may have spent serious
+    # token budget by now). Skipping on failure matches "default false on
+    # doubt" — an unverifiable edge is simply not asserted.
+    verified: list[Relation] = []
+    skipped = 0
+    for c in guarded:
+        try:
+            r = verify_relation(c, axioms_by_id, passages, complete_json=complete_json)
+        except Exception as exc:  # noqa: BLE001 - isolate per edge, keep the rest
+            skipped += 1
+            print(
+                f"warning: relate: verify failed for {c.from_id} -{c.type.value}-> "
+                f"{c.to_id}, skipping edge: {exc}",
+                file=sys.stderr,
+            )
+            continue
+        if r.verified:
+            verified.append(r)
+    if skipped:
+        print(f"warning: relate: skipped {skipped} edge(s) on verify failure", file=sys.stderr)
+    return RelateResult(relations=verified, capped=capped, skipped=skipped)
 
 
 # ── CLI (API path) ────────────────────────────────────────────────────────────

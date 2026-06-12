@@ -31,13 +31,13 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r tools/kpm-builder/requirements.txt -r tools/kpm-builder/requirements-dev.txt
-          pip install -e tools/package-research
+          pip install -e 'tools/package-research[dev]'
+          pip install -e 'tools/kpm-builder[dev]'
       - name: Doctrine lint (the standard validates itself)
         run: python scripts/doctrine_lint.py .
       - name: Doctrine lint tests
         run: pytest scripts/tests -q
       - name: package-research tests
-        run: PYTHONPATH=tools/package-research/src pytest tools/package-research/tests -q
+        run: pytest tools/package-research/tests -q
       - name: kpm-builder tests
-        run: PYTHONPATH=tools/kpm-builder:tools/package-research/src pytest tools/kpm-builder/tests -q
+        run: pytest tools/kpm-builder/tests -q

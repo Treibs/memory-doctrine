@@ -14,6 +14,8 @@ constructed via ``make_provider()`` (lazy SDK imports).
 
 from __future__ import annotations
 
+from package_research.llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
+
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -86,8 +88,8 @@ Rules:
 def _build_prompt(claim: str, source_text: str) -> str:
     """Build the verifier prompt from the claim and the raw source text only."""
     return (
-        f"{_SYSTEM_PROMPT}\n\n"
-        f"SOURCE PASSAGE:\n{source_text}\n\n"
+        f"{_SYSTEM_PROMPT}\n\n{UNTRUSTED_PREAMBLE}\n\n"
+        f"SOURCE PASSAGE:\n{delimit_untrusted(source_text)}\n\n"
         f"CLAIM TO VERIFY:\n{claim}\n\n"
         "Respond with JSON only."
     )

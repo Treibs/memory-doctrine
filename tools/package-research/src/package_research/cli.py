@@ -37,10 +37,13 @@ from pathlib import Path
 from typing import List, Optional, Sequence
 
 from .assemble import assemble, write_reference_notes
+from .cluster import cluster_axioms
 from .config import Config
 from .distill import distill
 from .ingest import Candidate, ingest, passages_by_source
+from .relate import RelateStats, relate_axioms
 from .llm import LLMClient
+from .llm_core import malformed_counts, reset_malformed
 from .score import ScoredIdea, score
 from .split import split, uncited_sources
 from .validate import ValidationResult, validate
@@ -160,7 +163,7 @@ def _make_llm(config: Config) -> LLMClient:
     Factored out so tests can monkeypatch it with a fake (no API key needed).
     """
     api_key = Config.resolve_api_key()  # raises a clear error if missing
-    return LLMClient(api_key=api_key, model=config.model)
+    return LLMClient(api_key=api_key, model=config.model, max_tokens=config.max_tokens)
 
 
 def _summarize(
@@ -175,6 +178,8 @@ def _summarize(
     n_sources: int = 0,
     uncited: "Optional[List[str]]" = None,
     kept_uncited: bool = False,
+    malformed: "Optional[dict]" = None,
+    relations: "Optional[RelateStats]" = None,
 ) -> None:
     """Print a clear, human-readable run summary."""
     print("package-research run complete", file=out)
@@ -182,6 +187,25 @@ def _summarize(
     print(f"  ideas distilled     : {n_ideas}", file=out)
     print(f"  ideas scored        : {n_scored}", file=out)
     print(f"  kept after verify   : {n_kept}", file=out)
+    if relations is not None:
+        extra = ""
+        if relations.capped or relations.skipped:
+            extra = f" (capped {relations.capped}, skipped {relations.skipped})"
+        print(
+            f"  relations verified  : {relations.verified}/{relations.proposed}{extra}",
+            file=out,
+        )
+
+    # Malformed model outputs are never silent (an all-malformed run must be
+    # distinguishable from a legitimate "nothing survived").
+    malformed = malformed or {}
+    if malformed:
+        per_stage = ", ".join(f"{k}={v}" for k, v in sorted(malformed.items()))
+        print(
+            f"  malformed outputs   : {sum(malformed.values())} ({per_stage}) — "
+            "low counts above may be model garbage, not judgment",
+            file=out,
+        )
     print(f"  output package      : {package_dir}", file=out)
 
     # Source coverage — never drop a file silently (no hidden loss).
@@ -242,21 +266,28 @@ def _cmd_run(args: argparse.Namespace) -> int:
         return 2
 
     complete_json = llm.complete_json
+    reset_malformed()
 
     # --- the full pipeline -------------------------------------------------
     candidates = ingest(config)
-    ideas = distill(candidates, complete_json)
+    ideas = distill(candidates, complete_json, batch_size=config.distill_batch_size)
     scored = score(ideas, complete_json)
     verified = verify(scored, complete_json)
     # Preserve the source content in the store (keep details, not just headlines).
     pbs = passages_by_source(candidates)
-    axioms, evidence = split(verified, pbs)
+    axioms, evidence = split(verified, pbs, survived_challenge=True)
+    # Relate pass: the package's value lives in the connections (EFF-1).
+    rel_stats = relate_axioms(axioms, complete_json)
+    # Cluster pass: connected components of the relation graph are the
+    # package's emergent themes (EFF-4). Deterministic, no LLM call.
+    clusters = cluster_axioms(axioms)
 
     name = args.name or "@kpm/distilled-research"
     assemble(
         axioms,
         evidence,
         config.output_dir,
+        clusters=clusters,
         run_date=run_date,
         name=name,
     )
@@ -280,6 +311,8 @@ def _cmd_run(args: argparse.Namespace) -> int:
         n_sources=len(pbs),
         uncited=sorted(uncited),
         kept_uncited=getattr(args, "keep_uncited", False),
+        malformed=malformed_counts(),
+        relations=rel_stats,
     )
 
     # Lint is the hard gate: a structurally invalid package is a failure.

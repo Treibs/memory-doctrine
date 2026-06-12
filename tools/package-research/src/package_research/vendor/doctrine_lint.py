@@ -110,6 +110,25 @@ def check(pkg: Path):
     for nid, n in notes.items():
         if n["kind"] == "evidence" and nid not in cited_evidence:
             errs.append(f"{nid}: orphan evidence note (cited by no axiom)")
+    # Warnings (stderr, non-fatal): doctrine-fidelity smells that aren't
+    # structural violations. stdout's format is a stable contract (validate.py
+    # parses it), so warnings never touch it.
+    axiom_notes = [n for n in notes.values() if n["kind"] == "axioms"]
+    if len(axiom_notes) > 1:
+        inter_axiom_keys = [k for k in REL_KEYS if k != "applies-to-kpm"]
+        n_edges = sum(
+            len((n["fm"].get("relations") or {}).get(k) or [])
+            for n in axiom_notes
+            for k in inter_axiom_keys
+        )
+        if n_edges == 0:
+            print(
+                f"doctrine_lint: warning: {len(axiom_notes)} axioms share ZERO "
+                "inter-axiom relations — the doctrine's value lives in the "
+                "connections, not the nodes (E2)",
+                file=sys.stderr,
+            )
+
     if errs:
         print(f"doctrine_lint: {len(errs)} violation(s):")
         for e in errs:

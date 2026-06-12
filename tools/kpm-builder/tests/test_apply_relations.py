@@ -207,3 +207,40 @@ def test_relate_and_apply_wrapper(tmp_path):
     result = relate_and_apply(tmp_path, complete_json=fake)
     assert len(result.relations) == 1
     assert validate(str(tmp_path)).lint_ok
+
+
+def test_relate_kpm_isolates_per_edge_verify_failures(tmp_path, capsys):
+    """One exploding verify call must not abort the stage or discard the other
+    verified edges (REVIEW.md KPM-H4)."""
+    contract = {"goal": "G", "in_scope": "I", "out_of_scope": "O"}
+    beats = [
+        {"question": "Q1", "claims": [
+            _claim("Alpha implies Beta in system X.", "https://ex.com/1"),
+            _claim("Gamma constrains Alpha within system X.", "https://ex.com/2")]},
+        {"question": "Q2", "claims": [
+            _claim("Beta is derivable from Alpha in system X.", "https://ex.com/3"),
+            _claim("Delta bounds Beta in system X.", "https://ex.com/4")]},
+    ]
+    build_from_research(
+        contract, beats, out_dir=tmp_path,
+        run_date="2026-06-04", fetched_at="2026-06-04T00:00:00Z",
+    )
+    state = {"verify_calls": 0}
+
+    def fake(prompt, schema):
+        if "AXIOMS:" in prompt and "PROPOSED RELATION" not in prompt:
+            aids = re.findall(r"(?m)^- (\S+):", prompt)
+            return {"relations": [
+                {"from_id": aids[0], "to_id": aids[1], "type": "supports", "rationale": "r"},
+                {"from_id": aids[1], "to_id": aids[2], "type": "supports", "rationale": "r"},
+            ]}
+        state["verify_calls"] += 1
+        if state["verify_calls"] == 1:
+            raise RuntimeError("provider blew up mid-stage")
+        return {"holds": True, "reason": "x"}
+
+    result = relate_kpm(tmp_path, complete_json=fake)
+    assert state["verify_calls"] == 2          # second edge still attempted
+    assert len(result.relations) == 1          # surviving edge kept
+    assert result.skipped == 1                 # failure surfaced, not silent
+    assert "skipping edge" in capsys.readouterr().err

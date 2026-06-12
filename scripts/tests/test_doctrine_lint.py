@@ -168,3 +168,34 @@ def test_orphan_evidence_fails(tmp_path):
     pkg = _pkg(tmp_path, {"B1-x": GOOD_AX}, {"src-1": GOOD_EV, "src-2": orphan})
     r = run(pkg)
     assert r.returncode == 1 and "orphan evidence" in r.stdout
+
+
+def test_zero_edge_multi_axiom_package_warns_on_stderr(tmp_path):
+    """E2: a multi-axiom package with no inter-axiom relations gets a warning
+    (stderr only — stdout's format is a stable contract; exit code unchanged)."""
+    ax2 = GOOD_AX.replace("id: B1-x", "id: B2-y").replace("status: locked", "status: candidate")
+    pkg = _pkg(tmp_path, {"B1-x": GOOD_AX, "B2-y": ax2}, {"src-1": GOOD_EV})
+    r = run(pkg)
+    assert r.returncode == 0
+    assert "ZERO" in r.stderr and "connections" in r.stderr
+    assert "warning" not in r.stdout          # stdout contract untouched
+
+
+def test_connected_package_does_not_warn(tmp_path):
+    ax2 = (
+        GOOD_AX.replace("id: B1-x", "id: B2-y")
+        .replace("status: locked", "status: candidate")
+        .replace("supports: []", "supports: [B1-x]")
+        .replace("Body cites [[src-1]].", "Body cites [[src-1]] and [[B1-x]].")
+    )
+    pkg = _pkg(tmp_path, {"B1-x": GOOD_AX, "B2-y": ax2}, {"src-1": GOOD_EV})
+    r = run(pkg)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "ZERO" not in r.stderr
+
+
+def test_single_axiom_package_does_not_warn(tmp_path):
+    pkg = _pkg(tmp_path, {"B1-x": GOOD_AX}, {"src-1": GOOD_EV})
+    r = run(pkg)
+    assert r.returncode == 0
+    assert "ZERO" not in r.stderr
