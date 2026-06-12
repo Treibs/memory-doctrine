@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kpm-builder"
+version = "0.1.0"
+description = "Research a topic from scratch into a doctrine-grounded knowledge package (KPM)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    # Sibling tool in this repo, not published to PyPI — install it first:
+    #   pip install -e tools/package-research
+    "package-research>=0.1.0",
+]
+
+[project.scripts]
+kpm-build = "kpm_builder.cli:main"
+kpm-relate = "kpm_builder.relate:main"
+kpm-resolve = "kpm_builder.resolve:main"
+kpm-graph-index = "kpm_builder.graph_index:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[tool.setuptools]
+packages = ["kpm_builder"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
