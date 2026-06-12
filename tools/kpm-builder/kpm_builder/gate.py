@@ -11,6 +11,8 @@ callable so tests can inject a fake without hitting any LLM.
 """
 from __future__ import annotations
 
+from package_research.llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
+
 from dataclasses import dataclass
 from typing import Callable
 
@@ -147,6 +149,8 @@ You are a relevance judge for a knowledge-package builder.
 ## Source to evaluate
 URL: {url}
 
+{untrusted_preamble}
+
 Content (first 2000 chars):
 {text_snippet}
 
@@ -175,7 +179,8 @@ def is_relevant(
         in_scope=contract.in_scope,
         out_of_scope=contract.out_of_scope,
         url=source.url,
-        text_snippet=source.text[:2000],
+        untrusted_preamble=UNTRUSTED_PREAMBLE,
+        text_snippet=delimit_untrusted(source.text[:2000], label=source.url),
     )
     result = complete_json(prompt, RELEVANCE_SCHEMA)
     return bool(result.get("relevant", False))

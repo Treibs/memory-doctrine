@@ -21,6 +21,7 @@ from typing import List
 
 from .distill import Idea
 from .llm import CompleteJSON
+from .llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
 
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "score.md"
 
@@ -57,7 +58,10 @@ def load_prompt() -> str:
 def _render_idea(idea: Idea) -> str:
     files = ", ".join(Path(f).name for f in idea.supporting_source_files) or "(none)"
     if idea.supporting_snippets:
-        snippets = "\n".join(f"- {s.strip()}" for s in idea.supporting_snippets)
+        # Snippets are verbatim untrusted source text — delimited as data.
+        snippets = delimit_untrusted(
+            "\n".join(f"- {s.strip()}" for s in idea.supporting_snippets)
+        )
     else:
         snippets = "(no supporting snippets present)"
     return (
@@ -70,7 +74,7 @@ def _render_idea(idea: Idea) -> str:
 def build_prompt(idea: Idea) -> str:
     """Assemble the full score prompt: C1 rubric + the rendered idea."""
     rubric = load_prompt()
-    return f"{rubric}\n\n---\n\n{_render_idea(idea)}"
+    return f"{rubric}\n\n{UNTRUSTED_PREAMBLE}\n\n---\n\n{_render_idea(idea)}"
 
 
 def _clamp_confidence(value: object) -> float:

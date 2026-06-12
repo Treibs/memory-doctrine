@@ -17,6 +17,7 @@ from typing import List
 
 from .ingest import Candidate
 from .llm import CompleteJSON
+from .llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
 
 _PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "distill.md"
 
@@ -70,15 +71,22 @@ def _render_candidates(candidates: List[Candidate]) -> str:
     for i, c in enumerate(candidates, 1):
         # Use the FULL relative path (not just the basename) so the model cites
         # provenance precisely — matching skill mode, and avoiding basename
-        # collisions for notes in subdirectories.
-        blocks.append(f"[{i}] source_file: {c.source_file}\n{c.text.strip()}")
+        # collisions for notes in subdirectories. The note text itself is
+        # untrusted (scrapes, third-party notes) — delimited as data.
+        blocks.append(
+            f"[{i}] source_file: {c.source_file}\n"
+            f"{delimit_untrusted(c.text.strip(), label=c.source_file)}"
+        )
     return "\n\n".join(blocks)
 
 
 def build_prompt(candidates: List[Candidate]) -> str:
     """Assemble the full distill prompt: rubric + rendered candidates."""
     rubric = load_prompt()
-    return f"{rubric}\n\n---\n\n## Candidate passages\n\n{_render_candidates(candidates)}\n"
+    return (
+        f"{rubric}\n\n{UNTRUSTED_PREAMBLE}\n\n---\n\n"
+        f"## Candidate passages\n\n{_render_candidates(candidates)}\n"
+    )
 
 
 def _dedupe(ideas: List[Idea]) -> List[Idea]:

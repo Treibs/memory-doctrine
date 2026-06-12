@@ -20,6 +20,8 @@ from pathlib import Path
 
 import yaml
 
+from package_research.llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
+
 from kpm_builder._util import atomic_write, read_frontmatters, slug
 from kpm_builder.concepts import extract_concepts
 from kpm_builder.relate import read_axioms, read_evidence
@@ -245,11 +247,13 @@ def _resolve_prompt(
     def block(aid: str) -> str:
         lines = [f"AXIOM {aid}: {statements.get(aid, '')}"]
         for eid in axiom_evidence.get(aid, []):
-            lines.append(f"  evidence {eid}: {evidence_passages.get(eid, '')}")
+            lines.append(
+                f"  evidence {eid}: {delimit_untrusted(evidence_passages.get(eid, ''), label=eid)}"
+            )
         return "\n".join(lines)
 
     return (
-        f"{_RESOLVE_SYSTEM}\n\n{block(a_id)}\n\n{block(b_id)}\n\n"
+        f"{_RESOLVE_SYSTEM}\n\n{UNTRUSTED_PREAMBLE}\n\n{block(a_id)}\n\n{block(b_id)}\n\n"
         'Respond with JSON only: {"status","truth","truth_passage_id","error_axiom",'
         '"explanation","basis"}.'
     )

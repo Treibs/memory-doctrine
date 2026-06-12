@@ -26,6 +26,7 @@ import yaml
 # Reuse the existing seam — do not reimplement.  The seam returns a parsed dict
 # (same contract as ground.py), so no JSON text-parsing is needed here.
 from kpm_builder.providers import CompleteJSON
+from package_research.llm_core import UNTRUSTED_PREAMBLE, delimit_untrusted
 
 # Line-anchored frontmatter split (same shape as the public linter's _parse):
 # a bare `---` inside a value can't truncate it.
@@ -247,8 +248,9 @@ def _verify_prompt(
     ]
     if rtype in EVIDENTIAL:
         lines += [
-            f"FROM source passage: {from_passage}",
-            f"TO source passage: {to_passage}",
+            UNTRUSTED_PREAMBLE,
+            f"FROM source passage:\n{delimit_untrusted(from_passage)}",
+            f"TO source passage:\n{delimit_untrusted(to_passage)}",
         ]
     lines.append(
         'Respond with JSON only: {"holds": <bool>, "reason": <one sentence>}.'
