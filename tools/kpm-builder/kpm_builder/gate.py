@@ -86,7 +86,9 @@ _TIER_RULES: list[tuple[list[str], SourceTier]] = [
         # all of GitHub. eth2book.info is Edgington's annotated consensus spec.
         ["ethereum.org", "solana.com", "bitcoin.org", "eips.ethereum.org",
          "anza.xyz", "docs.", "developer.", ".dev/", "readthedocs", "w3.org",
-         "ietf.org", "rust-lang.org",
+         # IETF standards: ietf.org hosts the datatracker; rfc-editor.org is the
+         # canonical RFC publisher, and "/rfc/" catches RFC URLs on either host.
+         "ietf.org", "rfc-editor.org", "/rfc/", "rust-lang.org",
          "github.com/ethereum/", "githubusercontent.com/ethereum/", "eth2book.info",
          "raft.github.io",
          # Canonical author-hosted formal specs: Diego Ongaro's (ongardie) Raft
