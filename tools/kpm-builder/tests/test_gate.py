@@ -101,6 +101,15 @@ class TestClassifyTier:
         src = Source(url="https://developer.mozilla.org/en-US/docs/Web/API", text="text")
         assert classify_tier(src) == SourceTier.OFFICIAL_DOCS
 
+    def test_rfc_editor_is_official_docs(self):
+        # The canonical RFC publisher — an IETF standard, not an UNKNOWN source.
+        src = Source(url="https://www.rfc-editor.org/rfc/rfc9111.html", text="text")
+        assert classify_tier(src) == SourceTier.OFFICIAL_DOCS
+
+    def test_rfc_path_on_datatracker_is_official_docs(self):
+        src = Source(url="https://datatracker.ietf.org/doc/html/rfc9110", text="text")
+        assert classify_tier(src) == SourceTier.OFFICIAL_DOCS
+
     def test_dev_path_segment_is_official_docs(self):
         src = Source(url="https://pkg.go.dev/net/http", text="text")
         assert classify_tier(src) == SourceTier.OFFICIAL_DOCS
