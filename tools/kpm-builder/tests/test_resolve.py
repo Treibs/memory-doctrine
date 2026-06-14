@@ -83,6 +83,28 @@ def test_measures_disagree():
     assert not measures_disagree(twothirds, same)              # equal values, different form
 
 
+def test_identifier_numbers_are_not_measures():
+    # issue #23: status codes / versions / ports / sections NAME things, they
+    # don't measure them — they must not be extracted as comparable values.
+    assert extract_measures("The 304 (Not Modified) status code indicates ...") == []
+    assert extract_measures("the 404 Not Found client error response status code") == []
+    assert extract_measures("All 1xx (Informational), 204 (No Content), and 304 (Not Modified) responses") == []
+    assert extract_measures("a matching stored response leads to a 304 (Not Modified)") == []
+    assert extract_measures("this is HTTP version 2 of the spec") == []
+    assert extract_measures("the service listens on port 8080") == []
+    # real quantities are still measured (the guard is narrow):
+    assert extract_measures("finalizing takes 15 minutes")[0].raw == "15"
+    assert extract_measures("deposit 2048 eth")[0].raw == "2048"
+    assert extract_measures("an epoch is 32 slots")[0].raw == "32"
+
+
+def test_different_status_codes_do_not_disagree():
+    # The reported false positive: 304 vs 404 flagged as a value disagreement.
+    a = extract_measures("The 304 (Not Modified) status code indicates a conditional GET")
+    b = extract_measures("The 404 (Not Found) status code indicates the server did not find it")
+    assert not any(measures_disagree(x, y) for x in a for y in b)
+
+
 def test_dataclasses():
     c = Contradiction(a_id="a1", b_id="a2", source="value")
     assert c.source == "value"
