@@ -122,13 +122,51 @@ def _unit_after(text: str, end: int) -> str:
     return ""
 
 
+# Strong identifier nouns: when one sits next to a bare integer, the number
+# NAMES a thing (a status code, version, port, section…) rather than MEASURING a
+# quantity, so it must not be compared as a value (issue #23 — HTTP status codes
+# 304 vs 404 are distinct labels, not disagreeing measurements). Kept narrow —
+# words that are essentially never the unit of a real measurement — so genuine
+# value disagreements ("12.8 minutes" vs "15 minutes", "32 eth" vs "2048 eth")
+# are unaffected.
+_IDENT_MARKERS = frozenset(
+    "status code codes version versions port ports section subsection chapter "
+    "clause rfc http https ipv appendix figure table".split()
+)
+
+
+def _is_identifier_number(text: str, start: int, end: int, raw: str) -> bool:
+    """True if the number at ``[start:end]`` names an identifier (status code,
+    version, port, section…) rather than a measured quantity (issue #23).
+
+    Only bare integers qualify — decimals, percents, and fractions are real
+    quantities. The canonical ``<code> (Reason Phrase)`` form (a bare integer
+    immediately followed by a parenthesized label) is an identifier; so is a
+    bare integer with a strong identifier noun in the surrounding window.
+    """
+    if not raw.isdigit():  # decimals / percents / fractions are quantities
+        return False
+    if text[end:].lstrip(" \t")[:1] == "(":  # "304 (Not Modified)"
+        return True
+    window = set(_WORD.findall(text[end:end + 48].lower()))
+    window |= set(_WORD.findall(text[max(0, start - 24):start].lower()))
+    return bool(window & _IDENT_MARKERS)
+
+
 def extract_measures(statement: str) -> list[Measure]:
-    """Pull every ``(value, unit)`` numeric assertion from a statement."""
+    """Pull every ``(value, unit)`` numeric assertion from a statement.
+
+    Identifier numbers (status codes, versions, ports, section numbers — see
+    :func:`_is_identifier_number`) are skipped: they label things, not measure
+    them, so comparing them as values is meaningless (issue #23)."""
     out: list[Measure] = []
     for m in _NUM_RE.finditer(statement):
-        val = normalize_number(m.group(1))
+        raw = m.group(1)
+        if _is_identifier_number(statement, m.start(), m.end(), raw):
+            continue
+        val = normalize_number(raw)
         if val is not None:
-            out.append(Measure(value=val, unit=_unit_after(statement, m.end()), raw=m.group(1)))
+            out.append(Measure(value=val, unit=_unit_after(statement, m.end()), raw=raw))
     return out
 
 
