@@ -98,7 +98,13 @@ _TIER_RULES: list[tuple[list[str], SourceTier]] = [
          "github.com/ongardie/", "githubusercontent.com/ongardie/", "raft.tla",
          # Canonical language documentation: the Move Book / Move Reference
          # (move-book.com, move-language.github.io) is the official Move spec.
-         "move-book.com", "move-language.github.io"],
+         "move-book.com", "move-language.github.io",
+         # Government and standards-body publications: .gov/.mil (NIST SPs, FCC
+         # rules, etc.) and the major standards organizations are authoritative
+         # primary sources. A "blog." / "/blog" gov page still hits the BLOG
+         # rule above first, so only the substantive pages land here.
+         ".gov", ".mil", "itu.int", "iso.org", "ieee.org", "wi-fi.org",
+         "bluetooth.com", "bluetooth.org", "gnuradio.org"],
         SourceTier.OFFICIAL_DOCS,
     ),
     (

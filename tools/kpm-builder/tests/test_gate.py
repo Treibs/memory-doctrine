@@ -110,6 +110,24 @@ class TestClassifyTier:
         src = Source(url="https://datatracker.ietf.org/doc/html/rfc9110", text="text")
         assert classify_tier(src) == SourceTier.OFFICIAL_DOCS
 
+    def test_gov_publications_are_official_docs(self):
+        # NIST special publications and FCC rules are authoritative primaries.
+        for url in (
+            "https://csrc.nist.gov/pubs/sp/800/121/r2/final",
+            "https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-153.pdf",
+            "https://transition.fcc.gov/eb/jammerenforcement/",
+        ):
+            assert classify_tier(Source(url=url, text="x")) == SourceTier.OFFICIAL_DOCS, url
+
+    def test_standards_bodies_are_official_docs(self):
+        for url in (
+            "https://www.wi-fi.org/discover-wi-fi/security",
+            "https://www.bluetooth.com/specifications/specs/core-specification/",
+            "https://www.itu.int/rec/R-REG-RR/en",
+            "https://www.gnuradio.org/about/",
+        ):
+            assert classify_tier(Source(url=url, text="x")) == SourceTier.OFFICIAL_DOCS, url
+
     def test_dev_path_segment_is_official_docs(self):
         src = Source(url="https://pkg.go.dev/net/http", text="text")
         assert classify_tier(src) == SourceTier.OFFICIAL_DOCS
